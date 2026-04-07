@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>투자 관리</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 모바일 햄버거 -->
+    <button class="mobile-menu-btn" id="mobileMenuBtn">&#9776;</button>
+
+    <!-- 사이드바 -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h1>&#128176; 투자관리</h1>
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item active" data-page="dashboard">
+                <span class="nav-icon">&#128202;</span> 자산 현황
+            </li>
+            <li class="nav-item" data-page="budget">
+                <span class="nav-icon">&#128179;</span> 가계부
+            </li>
+            <li class="nav-item" data-page="stocks">
+                <span class="nav-icon">&#128200;</span> 주식 현황
+            </li>
+            <li class="nav-item" data-page="crypto">
+                <span class="nav-icon">&#9939;</span> 코인 현황
+            </li>
+        </ul>
+        <div class="sidebar-footer">
+            <button class="btn btn-danger btn-sm" id="resetDataBtn">데이터 초기화</button>
+        </div>
+    </nav>
+
+    <!-- 오버레이 -->
+    <div class="overlay" id="overlay"></div>
+
+    <!-- 메인 콘텐츠 -->
+    <main class="main-content">
+
+        <!-- ===== 자산 현황 ===== -->
+        <section class="page active" id="page-dashboard">
+            <h2 class="page-title">자산 현황</h2>
+
+            <!-- 벤토 그리드: 1행 - 도넛 + 요약 카드 -->
+            <div class="bento-row-top">
+                <!-- 자산 배분 도넛 -->
+                <div class="card bento-donut">
+                    <div class="card-header"><h3>자산 배분</h3></div>
+                    <div class="card-body">
+                        <div class="pie-chart-wrap">
+                            <div class="donut-container">
+                                <svg id="pieChart" viewBox="0 0 200 200" class="pie-svg"></svg>
+                                <div class="donut-center">
+                                    <span class="donut-label">총 자산</span>
+                                    <span class="donut-value" id="totalAsset">0</span>
+                                </div>
+                                <div class="donut-tooltip" id="donutTooltip"></div>
+                            </div>
+                            <div id="pieLegend" class="pie-legend"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 월별 수입/지출 요약 -->
+                <div class="bento-summary-col">
+                    <div class="summary-card">
+                        <span class="summary-label">예금/현금</span>
+                        <span class="summary-value" id="totalCash">0</span>
+                    </div>
+                    <div class="summary-card">
+                        <span class="summary-label">주식 평가액</span>
+                        <span class="summary-value" id="totalStock">0</span>
+                    </div>
+                    <div class="summary-card">
+                        <span class="summary-label">코인 평가액</span>
+                        <span class="summary-value" id="totalCrypto">0</span>
+                    </div>
+                    <div class="summary-card income-card">
+                        <span class="summary-label">이번달 수입</span>
+                        <span class="summary-value" id="dashMonthIncome">0</span>
+                    </div>
+                    <div class="summary-card expense-card">
+                        <span class="summary-label">이번달 지출</span>
+                        <span class="summary-value" id="dashMonthExpense">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 예금 관리 -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>예금/현금 관리</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <input type="text" id="depositName" placeholder="계좌명 (예: 신한은행 적금)">
+                        <input type="number" id="depositAmount" placeholder="금액">
+                        <button class="btn btn-primary" id="addDepositBtn">추가</button>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>계좌명</th><th>금액</th><th>삭제</th></tr>
+                        </thead>
+                        <tbody id="depositTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 월별 상세 내역 -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>월별 상세 내역</h3>
+                    <div class="month-selector" style="margin-bottom:0;">
+                        <button class="btn btn-sm" id="dashPrevMonth">&lt;</button>
+                        <span id="dashCurrentMonth"></span>
+                        <button class="btn btn-sm" id="dashNextMonth">&gt;</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="dash-month-summary" id="dashMonthSummary"></div>
+                    <div class="detail-columns">
+                        <div class="detail-column">
+                            <h4 class="detail-col-title income-title">수입 내역</h4>
+                            <div id="dashIncomeList" class="detail-list"></div>
+                        </div>
+                        <div class="detail-column">
+                            <h4 class="detail-col-title expense-title">지출 내역</h4>
+                            <div id="dashExpenseList" class="detail-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 연간 종합 현황 -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>연간 종합 현황</h3>
+                    <div class="month-selector" style="margin-bottom:0;">
+                        <button class="btn btn-sm" id="yearPrev">&lt;</button>
+                        <span id="yearLabel"></span>
+                        <button class="btn btn-sm" id="yearNext">&gt;</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- 연간 합계 -->
+                    <div class="annual-totals" id="annualTotals"></div>
+
+                    <!-- 월별 막대 그래프 -->
+                    <div class="annual-chart" id="annualChart"></div>
+
+                    <!-- 월별 요약 테이블 -->
+                    <div class="table-responsive">
+                        <table class="data-table annual-table">
+                            <thead>
+                                <tr>
+                                    <th>월</th><th>수입</th><th>지출</th>
+                                    <th>순저축</th><th>투자금액</th><th>누적자산</th>
+                                </tr>
+                            </thead>
+                            <tbody id="annualTableBody"></tbody>
+                            <tfoot id="annualTableFoot"></tfoot>
+                        </table>
+                    </div>
+
+                    <!-- 월 클릭 시 상세 펼침 -->
+                    <div id="annualDetail" class="annual-detail"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== 가계부 ===== -->
+        <section class="page" id="page-budget">
+            <h2 class="page-title">가계부</h2>
+
+            <!-- 월 선택 -->
+            <div class="month-selector">
+                <button class="btn btn-sm" id="prevMonth">&lt;</button>
+                <span id="currentMonth"></span>
+                <button class="btn btn-sm" id="nextMonth">&gt;</button>
+            </div>
+
+            <!-- 월 요약 -->
+            <div class="budget-summary-grid">
+                <div class="summary-card income-card">
+                    <span class="summary-label">수입</span>
+                    <span class="summary-value" id="monthIncome">0</span>
+                </div>
+                <div class="summary-card expense-card">
+                    <span class="summary-label">지출</span>
+                    <span class="summary-value" id="monthExpense">0</span>
+                </div>
+                <div class="summary-card">
+                    <span class="summary-label">순수익</span>
+                    <span class="summary-value" id="monthNet">0</span>
+                </div>
+                <div class="summary-card fixed-card">
+                    <span class="summary-label">고정지출</span>
+                    <span class="summary-value" id="monthFixed">0</span>
+                </div>
+            </div>
+
+            <!-- 달력 -->
+            <div class="card">
+                <div class="card-body calendar-body">
+                    <div class="calendar-grid">
+                        <div class="cal-header">일</div>
+                        <div class="cal-header">월</div>
+                        <div class="cal-header">화</div>
+                        <div class="cal-header">수</div>
+                        <div class="cal-header">목</div>
+                        <div class="cal-header">금</div>
+                        <div class="cal-header">토</div>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid"></div>
+                </div>
+            </div>
+
+            <!-- 카테고리별 지출 -->
+            <div class="card">
+                <div class="card-header"><h3>카테고리별 지출</h3></div>
+                <div class="card-body">
+                    <div id="categoryChart" class="category-bars"></div>
+                </div>
+            </div>
+
+            <!-- 고정지출 관리 -->
+            <div class="card">
+                <div class="card-header"><h3>고정지출 관리</h3></div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <input type="text" id="fixedName" placeholder="항목명 (예: 인터넷비)">
+                        <input type="number" id="fixedAmount" placeholder="금액">
+                        <input type="number" id="fixedDay" placeholder="매월 몇일" min="1" max="31">
+                        <button class="btn btn-fixed" id="addFixedBtn">추가</button>
+                    </div>
+                    <table class="data-table" style="margin-top:16px;">
+                        <thead>
+                            <tr><th>항목명</th><th>금액</th><th>매월</th><th>수정</th><th>삭제</th></tr>
+                        </thead>
+                        <tbody id="fixedTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 월별 누적 막대 차트 -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>연간 수입/지출 추이</h3>
+                    <div class="month-selector" style="margin-bottom:0;">
+                        <button class="btn btn-sm" id="budgetYearPrev">&lt;</button>
+                        <span id="budgetYearLabel"></span>
+                        <button class="btn btn-sm" id="budgetYearNext">&gt;</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="budget-annual-totals" id="budgetAnnualTotals"></div>
+                    <div class="annual-chart" id="budgetAnnualChart"></div>
+                    <div id="budgetAnnualDetail" class="annual-detail"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== 주식 현황 ===== -->
+        <section class="page" id="page-stocks">
+            <h2 class="page-title">주식 현황</h2>
+
+            <div class="dashboard-summary">
+                <div class="summary-card">
+                    <span class="summary-label">총 투자금 (원화 환산)</span>
+                    <span class="summary-value" id="stockTotalInvest">0</span>
+                </div>
+                <div class="summary-card">
+                    <span class="summary-label">총 평가액 (원화 환산)</span>
+                    <span class="summary-value" id="stockTotalValue">0</span>
+                </div>
+                <div class="summary-card">
+                    <span class="summary-label">총 수익률</span>
+                    <span class="summary-value" id="stockTotalReturn">0%</span>
+                </div>
+            </div>
+
+            <!-- 환율 설정 -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>환율 (USD/KRW)</h3>
+                    <button class="btn btn-sm btn-accent" id="refreshExchangeBtn">&#x21bb; 환율 새로고침</button>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <label class="exchange-label">1 USD =</label>
+                        <input type="number" id="exchangeRate" placeholder="1,350" step="0.01">
+                        <label class="exchange-label">KRW</label>
+                        <button class="btn btn-primary" id="saveExchangeBtn">수동 적용</button>
+                    </div>
+                    <p class="hint" id="exchangeStatus">환율 정보를 불러오는 중...</p>
+                </div>
+            </div>
+
+            <!-- 종목 추가 -->
+            <div class="card">
+                <div class="card-header"><h3>종목 추가</h3></div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <select id="stockCountry">
+                            <option value="KR">한국 (&#8361;)</option>
+                            <option value="US">미국 ($)</option>
+                        </select>
+                        <input type="text" id="stockTicker" placeholder="티커 (예: SPY, QQQ)" style="display:none;">
+                        <input type="text" id="stockName" placeholder="종목명">
+                        <input type="number" id="stockQty" placeholder="수량" step="any">
+                        <input type="number" id="stockAvgPrice" placeholder="평균 매입가" step="any">
+                        <input type="number" id="stockCurPrice" placeholder="현재가" step="any">
+                        <button class="btn btn-primary" id="addStockBtn">추가</button>
+                    </div>
+                    <p class="hint" id="stockCurrencyHint">한국 주식: 원화(&#8361;)로 입력</p>
+                </div>
+            </div>
+
+            <!-- 한국 주식 -->
+            <div class="card">
+                <div class="card-header"><h3>한국 주식</h3></div>
+                <div class="card-body table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>종목명</th><th>수량</th><th>평단가</th>
+                                <th>현재가</th><th>투자금</th><th>평가액</th>
+                                <th>수익금</th><th>수익률</th><th>비중</th><th>수정</th><th>삭제</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stockKrTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 미국 주식/ETF -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>미국 주식 / ETF</h3>
+                    <button class="btn btn-sm btn-accent" id="refreshUsStockBtn">&#x21bb; 시세 갱신</button>
+                </div>
+                <div class="card-body table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>종목명</th><th>수량</th><th>평단가($)</th>
+                                <th>현재가($)</th><th>투자금($)</th><th>평가액($)</th>
+                                <th>원화 환산</th>
+                                <th>수익금($)</th><th>수익률</th><th>비중</th><th>수정</th><th>삭제</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stockUsTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== 코인 현황 ===== -->
+        <section class="page" id="page-crypto">
+            <h2 class="page-title">코인 현황</h2>
+
+            <div class="dashboard-summary">
+                <div class="summary-card">
+                    <span class="summary-label">총 투자금</span>
+                    <span class="summary-value" id="cryptoTotalInvest">0</span>
+                </div>
+                <div class="summary-card">
+                    <span class="summary-label">총 평가액</span>
+                    <span class="summary-value" id="cryptoTotalValue">0</span>
+                </div>
+                <div class="summary-card">
+                    <span class="summary-label">총 수익률</span>
+                    <span class="summary-value" id="cryptoTotalReturn">0%</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>코인 추가</h3>
+                    <button class="btn btn-sm btn-accent" id="refreshCryptoBtn">&#x21bb; 시세 갱신</button>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <input type="text" id="cryptoTicker" placeholder="티커 (예: BTC, ETH, XRP)">
+                        <input type="number" id="cryptoQty" placeholder="수량" step="any">
+                        <input type="number" id="cryptoAvgPrice" placeholder="평균 매입가">
+                        <button class="btn btn-primary" id="addCryptoBtn">추가</button>
+                    </div>
+                    <p class="hint">업비트 상장 코인 티커를 입력하세요. 현재가는 자동으로 불러옵니다.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h3>보유 코인</h3></div>
+                <div class="card-body table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>코인</th><th>수량</th><th>평단가</th>
+                                <th>현재가</th><th>투자금</th><th>평가액</th>
+                                <th>수익금</th><th>수익률</th><th>비중</th><th>수정</th><th>삭제</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cryptoTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 수정 모달 -->
+    <div class="modal-backdrop" id="editModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="editModalTitle">종목 수정</h3>
+                <button class="modal-close" id="editModalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editId">
+                <input type="hidden" id="editType">
+                <div class="modal-field">
+                    <label>종목명</label>
+                    <input type="text" id="editName" readonly>
+                </div>
+                <div class="modal-field">
+                    <label id="editQtyLabel">수량</label>
+                    <input type="number" id="editQty" step="any">
+                </div>
+                <div class="modal-field">
+                    <label id="editAvgPriceLabel">평균 매입가</label>
+                    <input type="number" id="editAvgPrice" step="any">
+                </div>
+                <div class="modal-field">
+                    <label id="editCurPriceLabel">현재가</label>
+                    <input type="number" id="editCurPrice" step="any">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-sm" id="editCancelBtn">취소</button>
+                <button class="btn btn-primary btn-sm" id="editSaveBtn">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 고정지출 수정 모달 -->
+    <div class="modal-backdrop" id="fixedEditModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>고정지출 수정</h3>
+                <button class="modal-close" id="fixedEditModalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="fixedEditId">
+                <div class="modal-field">
+                    <label>항목명</label>
+                    <input type="text" id="fixedEditName">
+                </div>
+                <div class="modal-field">
+                    <label>금액</label>
+                    <input type="number" id="fixedEditAmount">
+                </div>
+                <div class="modal-field">
+                    <label>매월 몇일</label>
+                    <input type="number" id="fixedEditDay" min="1" max="31">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-sm" id="fixedEditCancel">취소</button>
+                <button class="btn btn-fixed btn-sm" id="fixedEditSave">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 가계부 입력 모달 -->
+    <div class="modal-backdrop" id="budgetModal">
+        <div class="modal" style="width:480px;">
+            <div class="modal-header">
+                <h3 id="budgetModalTitle">수입/지출 입력</h3>
+                <button class="modal-close" id="budgetModalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="budgetModalDate">
+                <div class="modal-field">
+                    <label>유형</label>
+                    <select id="budgetType">
+                        <option value="income">수입</option>
+                        <option value="expense">지출</option>
+                    </select>
+                </div>
+                <div class="modal-field">
+                    <label>분류</label>
+                    <select id="budgetCategory">
+                        <option value="" disabled selected>분류 선택</option>
+                        <optgroup label="지출">
+                            <option value="식비">식비</option>
+                            <option value="교통비">교통비</option>
+                            <option value="쇼핑">쇼핑</option>
+                            <option value="의료비">의료비</option>
+                            <option value="문화/여가">문화/여가</option>
+                            <option value="주거/통신">주거/통신</option>
+                            <option value="기타지출">기타지출</option>
+                        </optgroup>
+                        <optgroup label="수입">
+                            <option value="월급">월급</option>
+                            <option value="용돈">용돈</option>
+                            <option value="부수입">부수입</option>
+                            <option value="기타수입">기타수입</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div class="modal-field">
+                    <label>내용</label>
+                    <input type="text" id="budgetDesc" placeholder="내용 (선택사항)">
+                </div>
+                <div class="modal-field">
+                    <label>금액</label>
+                    <input type="number" id="budgetAmount" placeholder="금액">
+                </div>
+                <!-- 해당 날짜 내역 목록 -->
+                <div id="budgetDayList" class="budget-day-list"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-sm" id="budgetModalCancel">닫기</button>
+                <button class="btn btn-primary btn-sm" id="addBudgetBtn">추가</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
