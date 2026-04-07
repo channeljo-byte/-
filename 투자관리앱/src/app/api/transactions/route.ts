@@ -1,7 +1,55 @@
 import { NextRequest } from "next/server";
 import { connectDB } from "@/lib/mongodb";
-import { Transaction } from "@/models";
+import { Transaction, Asset } from "@/models";
 import { ok, created, err, serverError } from "@/lib/api-helpers";
+
+// ─── 잔액 연동 헬퍼 ───
+const INCOME_TYPES = new Set(["DEPOSIT", "DIVIDEND", "INTEREST"]);
+const EXPENSE_TYPES = new Set(["WITHDRAWAL", "FEE"]);
+
+async function adjustBalance(
+  assetId: string | undefined | null,
+  transactionType: string,
+  amount: number,
+) {
+  if (!assetId) return;
+  const numAmount = Number(amount) || 0;
+  if (numAmount === 0) return;
+
+  let delta = 0;
+  if (INCOME_TYPES.has(transactionType)) {
+    delta = numAmount; // 수입 → 잔액 증가
+  } else if (EXPENSE_TYPES.has(transactionType)) {
+    delta = -numAmount; // 지출 → 잔액 차감
+  }
+  if (delta === 0) return;
+
+  await Asset.findByIdAndUpdate(assetId, {
+    $inc: { quantity: delta },
+  });
+}
+
+async function reverseBalance(
+  assetId: string | undefined | null,
+  transactionType: string,
+  amount: number,
+) {
+  if (!assetId) return;
+  const numAmount = Number(amount) || 0;
+  if (numAmount === 0) return;
+
+  let delta = 0;
+  if (INCOME_TYPES.has(transactionType)) {
+    delta = -numAmount; // 수입 롤백 → 잔액 차감
+  } else if (EXPENSE_TYPES.has(transactionType)) {
+    delta = numAmount; // 지출 롤백 → 잔액 복원
+  }
+  if (delta === 0) return;
+
+  await Asset.findByIdAndUpdate(assetId, {
+    $inc: { quantity: delta },
+  });
+}
 
 // GET /api/transactions
 export async function GET(req: NextRequest) {
@@ -48,6 +96,10 @@ export async function POST(req: NextRequest) {
     }
 
     const tx = await Transaction.create(body);
+
+    // 복식부기: 연결된 계좌 잔액 조정
+    await adjustBalance(body.assetId, body.transactionType, body.totalAmount);
+
     return created(tx);
   } catch (e) {
     return serverError(e);

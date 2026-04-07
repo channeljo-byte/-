@@ -10,9 +10,9 @@ export interface IAsset extends Document {
   currency: Currency;      // 자산의 기준 통화
 
   // 수량 & 단가 (소수점 8자리 — 크립토 대응)
-  quantity: number;        // Mongoose Decimal128 → number로 가상 getter
-  avgPrice: number;        // 평균 매입 단가
-  currentPrice: number;    // 최신 시세
+  quantity: string;        // Mongoose Decimal128 → string getter
+  avgPrice: string;        // 평균 매입 단가
+  currentPrice: string;    // 최신 시세
 
   // 메타데이터
   exchange?: string;       // "KRX", "NYSE", "UPBIT"
@@ -21,6 +21,7 @@ export interface IAsset extends Document {
 
   // 배당/이자 관련
   dividendYield?: number;  // 연간 배당수익률 (%)
+  dividendFrequency?: "MONTHLY" | "QUARTERLY" | "SEMI_ANNUALLY" | "ANNUALLY" | "NONE";
   lastDividendDate?: Date;
   isDividendReinvest: boolean; // 배당 재투자 여부
 
@@ -61,19 +62,19 @@ const AssetSchema = new Schema(
       type: Schema.Types.Decimal128,
       required: true,
       default: 0,
-      get: (v: mongoose.Types.Decimal128) => parseFloat(v?.toString() ?? "0"),
+      get: (v: mongoose.Types.Decimal128) => v?.toString() ?? "0",
     },
     avgPrice: {
       type: Schema.Types.Decimal128,
       required: true,
       default: 0,
-      get: (v: mongoose.Types.Decimal128) => parseFloat(v?.toString() ?? "0"),
+      get: (v: mongoose.Types.Decimal128) => v?.toString() ?? "0",
     },
     currentPrice: {
       type: Schema.Types.Decimal128,
       required: true,
       default: 0,
-      get: (v: mongoose.Types.Decimal128) => parseFloat(v?.toString() ?? "0"),
+      get: (v: mongoose.Types.Decimal128) => v?.toString() ?? "0",
     },
 
     exchange: { type: String, trim: true },
@@ -81,6 +82,11 @@ const AssetSchema = new Schema(
     memo: { type: String, trim: true, maxlength: 500 },
 
     dividendYield: { type: Number, default: 0 },
+    dividendFrequency: {
+      type: String,
+      enum: ["MONTHLY", "QUARTERLY", "SEMI_ANNUALLY", "ANNUALLY", "NONE"],
+      default: "NONE",
+    },
     lastDividendDate: { type: Date },
     isDividendReinvest: { type: Boolean, default: false },
 
@@ -95,14 +101,14 @@ const AssetSchema = new Schema(
 
 // ─── 가상 필드 ───
 AssetSchema.virtual("investedValue").get(function () {
-  const qty = parseFloat(this.quantity?.toString() ?? "0");
-  const avg = parseFloat(this.avgPrice?.toString() ?? "0");
+  const qty = Number(this.quantity?.toString() ?? "0");
+  const avg = Number(this.avgPrice?.toString() ?? "0");
   return qty * avg;
 });
 
 AssetSchema.virtual("currentValue").get(function () {
-  const qty = parseFloat(this.quantity?.toString() ?? "0");
-  const cur = parseFloat(this.currentPrice?.toString() ?? "0");
+  const qty = Number(this.quantity?.toString() ?? "0");
+  const cur = Number(this.currentPrice?.toString() ?? "0");
   return qty * cur;
 });
 

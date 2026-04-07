@@ -10,10 +10,10 @@ export interface ITransaction extends Document {
   currency: Currency;
 
   // 거래 상세
-  quantity: number;          // 거래 수량 (소수점 8자리)
-  price: number;             // 거래 단가
-  totalAmount: number;       // 총 거래 금액 (quantity × price + fee)
-  fee: number;               // 수수료
+  quantity: string;          // 거래 수량 (소수점 8자리)
+  price: string;             // 거래 단가
+  totalAmount: string;       // 총 거래 금액 (quantity × price + fee)
+  fee: string;               // 수수료
 
   // 배당 관련
   dividendPerShare?: number; // 주당 배당금
@@ -21,7 +21,7 @@ export interface ITransaction extends Document {
 
   // 환율 (외화 거래 시)
   exchangeRate?: number;     // 거래 시점 환율
-  exchangedAmount?: number;  // 원화 환산 금액
+  exchangedAmount?: string;  // 원화 환산 금액
 
   // 메타
   date: Date;                // 거래 일자
@@ -54,22 +54,22 @@ const TransactionSchema = new Schema(
     quantity: {
       type: Schema.Types.Decimal128,
       default: 0,
-      get: (v: mongoose.Types.Decimal128) => parseFloat(v?.toString() ?? "0"),
+      get: (v: mongoose.Types.Decimal128) => v?.toString() ?? "0",
     },
     price: {
       type: Schema.Types.Decimal128,
       default: 0,
-      get: (v: mongoose.Types.Decimal128) => parseFloat(v?.toString() ?? "0"),
+      get: (v: mongoose.Types.Decimal128) => v?.toString() ?? "0",
     },
     totalAmount: {
       type: Schema.Types.Decimal128,
       required: true,
-      get: (v: mongoose.Types.Decimal128) => parseFloat(v?.toString() ?? "0"),
+      get: (v: mongoose.Types.Decimal128) => v?.toString() ?? "0",
     },
     fee: {
       type: Schema.Types.Decimal128,
       default: 0,
-      get: (v: mongoose.Types.Decimal128) => parseFloat(v?.toString() ?? "0"),
+      get: (v: mongoose.Types.Decimal128) => v?.toString() ?? "0",
     },
 
     dividendPerShare: { type: Number },
@@ -79,7 +79,7 @@ const TransactionSchema = new Schema(
     exchangedAmount: {
       type: Schema.Types.Decimal128,
       get: (v: mongoose.Types.Decimal128 | null) =>
-        v ? parseFloat(v.toString()) : undefined,
+        v ? v.toString() : undefined,
     },
 
     date: { type: Date, required: true, index: true },

@@ -8,6 +8,7 @@ const NAV = [
   { href: "/budget", icon: "💳", label: "가계부" },
   { href: "/stocks", icon: "📈", label: "주식 현황" },
   { href: "/crypto", icon: "⛓", label: "코인 현황" },
+  { href: "/cash", icon: "🏦", label: "현금/예적금" },
 ] as const;
 
 export default function Sidebar() {

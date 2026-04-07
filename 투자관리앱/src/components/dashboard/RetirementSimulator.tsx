@@ -76,8 +76,10 @@ const FanTooltip = ({
 // ─── 메인 컴포넌트 ───────────────────────────────────────────────────────
 export default function RetirementSimulator({
   currentNetWorth = 100_000_000,
+  annualDividendIncome = 0,
 }: {
   currentNetWorth?: number;
+  annualDividendIncome?: number;
 }) {
   const [retireAge,      setRetireAge]      = useState(60);
   const [monthlySaving,  setMonthlySaving]  = useState(100);   // 만원
@@ -94,7 +96,8 @@ export default function RetirementSimulator({
   const result = useMemo(() => {
     const accumulationYears = Math.max(1, retireAge - CURRENT_AGE);
     const retirementYears   = Math.max(1, 100 - retireAge);
-    const annualContribution = monthlySaving * 10_000 * 12;
+    const savingContribution = monthlySaving * 10_000 * 12;
+    const annualContribution = savingContribution + annualDividendIncome;
 
     const pool = RETURN_PRESETS[returnPreset] as number[];
 
@@ -111,7 +114,7 @@ export default function RetirementSimulator({
       samplingMethod:       "BOOTSTRAP",
       seed:                 42,
     });
-  }, [retireAge, monthlySaving, returnPreset, withdrawalRate, currentNetWorth]);
+  }, [retireAge, monthlySaving, returnPreset, withdrawalRate, currentNetWorth, annualDividendIncome]);
 
   // ── 차트 데이터 변환 ──────────────────────────────────────────────────
   const chartData = useMemo(() => {
@@ -329,6 +332,13 @@ export default function RetirementSimulator({
         }`}>
           {interp.recommendation}
         </p>
+
+        {/* 배당금 반영 안내 */}
+        {annualDividendIncome > 0 && (
+          <p className="mt-2 text-[10px] text-slate-500">
+            현재 연간 배당금 {fmtEok(annualDividendIncome)}원이 시뮬레이션의 복리 재투자에 반영되었습니다.
+          </p>
+        )}
       </div>
     </div>
   );

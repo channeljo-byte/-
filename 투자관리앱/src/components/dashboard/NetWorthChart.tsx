@@ -58,6 +58,8 @@ const CustomTooltip = ({
 };
 
 export default function NetWorthChart({ data }: NetWorthChartProps) {
+  const showDots = data.length <= 2;
+
   return (
     <ResponsiveContainer width="100%" height={240}>
       <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -97,7 +99,7 @@ export default function NetWorthChart({ data }: NetWorthChartProps) {
           stroke="#6366f1"
           strokeWidth={1.5}
           fill="url(#gradAssets)"
-          dot={false}
+          dot={showDots ? { r: 4, fill: "#6366f1" } : false}
         />
         <Area
           type="monotone"
@@ -106,7 +108,7 @@ export default function NetWorthChart({ data }: NetWorthChartProps) {
           stroke="#f43f5e"
           strokeWidth={1.5}
           fill="url(#gradLiab)"
-          dot={false}
+          dot={showDots ? { r: 4, fill: "#f43f5e" } : false}
         />
         <Area
           type="monotone"
@@ -115,7 +117,7 @@ export default function NetWorthChart({ data }: NetWorthChartProps) {
           stroke="#10b981"
           strokeWidth={2.5}
           fill="url(#gradNetWorth)"
-          dot={false}
+          dot={showDots ? { r: 5, fill: "#10b981" } : false}
           strokeDasharray={undefined}
         />
       </AreaChart>
